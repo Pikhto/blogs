@@ -1,0 +1,2 @@
+FLASK_CONFIG=development
+FLASK_APP=flask_blog.py
