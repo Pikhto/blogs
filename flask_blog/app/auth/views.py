@@ -4,4 +4,4 @@ from . import auth
 
 @auth.route('/login')
 def login():
-    return render_template('auth/login.ntml')
+    return render_template('auth/login.html')
