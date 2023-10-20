@@ -1,5 +1,8 @@
+from flask import current_app
 from flask_login import UserMixin
+from itsdangerous import Serializer
 from werkzeug.security import check_password_hash, generate_password_hash
+import jwt
 
 from . import db, login_manager
 
@@ -21,6 +24,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, index=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False)
 
     @property
     def password(self):
@@ -33,7 +37,27 @@ class User(UserMixin, db.Model):
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def generate_confirmation_token(self, expiration=3600):
+        token = jwt.encode({
+            'confirm': self.id,
+            'expiration': expiration
+            },
+            current_app.config['SECRET_KEY'])
+        return token
 
+    def confirm(self, token):
+        try:
+            id = jwt.decode(token,
+                            current_app.config['SECRET_KEY'],
+                            algorithms='HS256')['confirm']
+        except:
+            return False
+
+        if id != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
 
     def __repr__(self):
         return '<User %r>' % self.username
